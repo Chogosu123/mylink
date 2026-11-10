@@ -71,7 +71,7 @@ export type AddLinkFormData = z.infer<typeof addLinkSchema>;
 interface AddLinkModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onAddLink: (link: LinkItem) => void;
+  onAddLink: (link: LinkItem) => Promise<void> | void;
 }
 
 const PRESET_ICONS = ["🔗", "💻", "🚀", "📝", "🎨", "📱", "✉️", "🌟"];
@@ -89,6 +89,7 @@ export default function AddLinkModal({
   onAddLink,
 }: AddLinkModalProps) {
   const [isShaking, setIsShaking] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // React Hook Form 초기화 (Zod Resolver 연동)
   const {
@@ -126,7 +127,7 @@ export default function AddLinkModal({
   };
 
   // 폼 제출 성공 처리
-  const onSubmit = (data: AddLinkFormData) => {
+  const onSubmit = async (data: AddLinkFormData) => {
     let normalizedUrl = data.url.trim();
     if (!/^https?:\/\//i.test(normalizedUrl)) {
       normalizedUrl = `https://${normalizedUrl}`;
@@ -142,8 +143,15 @@ export default function AddLinkModal({
       badge: data.badge?.trim() || undefined,
     };
 
-    onAddLink(newLink);
-    handleClose();
+    try {
+      setIsSubmitting(true);
+      await onAddLink(newLink);
+      handleClose();
+    } catch (error) {
+      console.error("링크 추가 중 오류:", error);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   // 검증 실패 시 Shake 애니메이션
@@ -441,9 +449,10 @@ export default function AddLinkModal({
             type="submit"
             variant="primary"
             size="l"
+            disabled={isSubmitting}
             className="flex-1 cursor-pointer"
           >
-            추가하기
+            {isSubmitting ? "저장 중..." : "추가하기"}
           </Button>
         </DialogFooter>
       </form>

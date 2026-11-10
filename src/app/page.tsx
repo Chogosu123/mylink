@@ -13,6 +13,19 @@ import QrModal from "@/components/QrModal";
 import AddLinkModal from "@/components/AddLinkModal";
 import Toast from "@/components/Toast";
 
+// Firebase Firestore 연동
+import { db } from "@/lib/firebase";
+import {
+  collection,
+  addDoc,
+  serverTimestamp,
+  getDocs,
+  query,
+  orderBy,
+  deleteDoc,
+  doc,
+} from "firebase/firestore";
+
 // 사진 2번 기반의 심플하고 깔끔한 기본 링크 목록
 const defaultLinks: LinkItem[] = [
   {
@@ -83,25 +96,67 @@ export default function Home() {
   const toastTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const savedLinks = localStorage.getItem("profile_links_simple_v2");
-      if (savedLinks) {
+    let isMounted = true;
+
+    // Firestore에서 실시간 또는 초기 링크 데이터 조회
+    const loadFirestoreLinks = async () => {
+      try {
+        const linksCol = collection(db, "users", "anonymous", "links");
+        let snapshot;
         try {
-          const parsed = JSON.parse(savedLinks);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            setProfile((prev) => ({ ...prev, links: parsed }));
-          }
-        } catch (e) {
-          console.error("Failed to parse saved links", e);
+          snapshot = await getDocs(query(linksCol, orderBy("createdAt", "desc")));
+        } catch {
+          // 정렬 인덱스가 없거나 미생성 시 일반 조회 fallback
+          snapshot = await getDocs(linksCol);
         }
-      } else {
-        localStorage.setItem(
-          "profile_links_simple_v2",
-          JSON.stringify(defaultLinks)
-        );
+
+        if (isMounted && !snapshot.empty) {
+          const firestoreLinks: LinkItem[] = snapshot.docs.map((docSnap) => {
+            const data = docSnap.data();
+            return {
+              id: docSnap.id,
+              title: data.title || "",
+              url: data.url || "",
+              description: data.description || undefined,
+              category: data.category || "project",
+              icon: data.icon || "🔗",
+              badge: data.badge || undefined,
+            };
+          });
+
+          setProfile((prev) => ({ ...prev, links: firestoreLinks }));
+          return;
+        }
+      } catch (err) {
+        console.warn("Firestore에서 링크를 불러오지 못했습니다. 로컬 데이터를 사용합니다:", err);
       }
-    }
+
+      // fallback: 로컬 스토리지 또는 기본 링크
+      if (typeof window !== "undefined") {
+        const savedLinks = localStorage.getItem("profile_links_simple_v2");
+        if (savedLinks) {
+          try {
+            const parsed = JSON.parse(savedLinks);
+            if (Array.isArray(parsed) && parsed.length > 0 && isMounted) {
+              setProfile((prev) => ({ ...prev, links: parsed }));
+              return;
+            }
+          } catch (e) {
+            console.error("Failed to parse saved links", e);
+          }
+        } else {
+          localStorage.setItem(
+            "profile_links_simple_v2",
+            JSON.stringify(defaultLinks)
+          );
+        }
+      }
+    };
+
+    loadFirestoreLinks();
+
     return () => {
+      isMounted = false;
       if (toastTimeoutRef.current) {
         clearTimeout(toastTimeoutRef.current);
       }
@@ -145,26 +200,62 @@ export default function Home() {
     triggerToast("프로필 링크를 복사했어요");
   };
 
-  // 링크 추가 핸들러
-  const handleAddLink = (newLink: LinkItem) => {
-    setProfile((prev) => {
-      const updated = [newLink, ...prev.links];
-      if (typeof window !== "undefined") {
-        localStorage.setItem(
-          "profile_links_simple_v2",
-          JSON.stringify(updated)
-        );
-      }
-      return {
-        ...prev,
-        links: updated,
+  // 링크 추가 핸들러: Firestore users/anonymous/links에 저장
+  const handleAddLink = async (newLinkData: LinkItem) => {
+    try {
+      // Firestore users/anonymous/links 컬렉션에 추가
+      const docRef = await addDoc(
+        collection(db, "users", "anonymous", "links"),
+        {
+          title: newLinkData.title,
+          url: newLinkData.url,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+          ...(newLinkData.description ? { description: newLinkData.description } : {}),
+          ...(newLinkData.category ? { category: newLinkData.category } : {}),
+          ...(newLinkData.icon ? { icon: newLinkData.icon } : {}),
+          ...(newLinkData.badge ? { badge: newLinkData.badge } : {}),
+        }
+      );
+
+      const newLink: LinkItem = {
+        ...newLinkData,
+        id: docRef.id,
       };
-    });
-    triggerToast("새로운 링크가 추가되었어요! 🎉");
+
+      setProfile((prev) => {
+        const updated = [newLink, ...prev.links];
+        if (typeof window !== "undefined") {
+          localStorage.setItem(
+            "profile_links_simple_v2",
+            JSON.stringify(updated)
+          );
+        }
+        return {
+          ...prev,
+          links: updated,
+        };
+      });
+
+      triggerToast("새로운 링크가 추가되었어요! 🎉");
+    } catch (error) {
+      console.error("Firestore 링크 저장 실패:", error);
+      triggerToast("Firestore 저장 실패: 연결 상태 또는 설정을 확인해주세요.");
+      throw error;
+    }
   };
 
   // 링크 삭제 핸들러
-  const handleDeleteLink = (id: string) => {
+  const handleDeleteLink = async (id: string) => {
+    try {
+      // Firestore 등록 문서인 경우 삭제
+      if (id && !id.startsWith("link-")) {
+        await deleteDoc(doc(db, "users", "anonymous", "links", id));
+      }
+    } catch (err) {
+      console.warn("Firestore 삭제 실패 또는 문서 미존재:", err);
+    }
+
     setProfile((prev) => {
       const updated = prev.links.filter((l) => l.id !== id);
       if (typeof window !== "undefined") {
