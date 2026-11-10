@@ -1,0 +1,118 @@
+{
+  "success": true,
+  "code": 200,
+  "message": "링크 및 프로필 데이터를 성공적으로 조회했습니다.",
+  "data": {
+    "profile": {
+      "id": "usr_01h9x8y7z6a1b2c3d4e5",
+      "username": "chogosu",
+      "name": "이주성",
+      "title": "바이브 코딩으로 아이디어를 만들어요",
+      "bio": "안녕하세요, 이주성이에요. 생각을 코드로 빠르게 실현하는 바이브 코딩을 즐겨요. 새로운 기술과 창의적인 프로젝트에 늘 호기심이 많아요.",
+      "status": "새로운 프로젝트 구상 중이에요 💡",
+      "avatarUrl": "/avatar.jpg",
+      "socials": {
+        "github": "https://github.com/Chogosu123",
+        "blog": "https://velog.io",
+        "instagram": "https://instagram.com",
+        "email": "mailto:sooo849667@gmail.com",
+        "linkedin": null
+      },
+      "stats": {
+        "totalLikes": 36,
+        "totalLinks": 6,
+        "viewCount": 128
+      }
+    },
+    "links": [
+      {
+        "id": "link_01",
+        "title": "GitHub 저장소",
+        "url": "https://github.com/Chogosu123",
+        "description": "학습한 코드와 프로젝트 소스코드 모음",
+        "icon": "💻",
+        "category": "project",
+        "badge": "대표",
+        "isPinned": true,
+        "order": 1,
+        "clicks": 42,
+        "createdAt": "2026-10-01T09:00:00Z",
+        "updatedAt": "2026-11-01T15:30:00Z"
+      },
+      {
+        "id": "link_02",
+        "title": "기술 블로그",
+        "url": "https://velog.io",
+        "description": "바이브 코딩 배운 내용과 개발 기록",
+        "icon": "📝",
+        "category": "blog",
+        "badge": "주간",
+        "isPinned": true,
+        "order": 2,
+        "clicks": 38,
+        "createdAt": "2026-10-05T11:20:00Z",
+        "updatedAt": "2026-11-03T18:00:00Z"
+      },
+      {
+        "id": "link_03",
+        "title": "포트폴리오",
+        "url": "https://notion.so",
+        "description": "그동안 진행한 활동과 프로젝트 정리",
+        "icon": "📑",
+        "category": "project",
+        "badge": null,
+        "isPinned": false,
+        "order": 3,
+        "clicks": 19,
+        "createdAt": "2026-10-10T14:00:00Z",
+        "updatedAt": "2026-10-28T09:15:00Z"
+      },
+      {
+        "id": "link_04",
+        "title": "인스타그램",
+        "url": "https://instagram.com",
+        "description": "일상과 소소한 순간들을 공유해요",
+        "icon": "📸",
+        "category": "contact",
+        "badge": null,
+        "isPinned": false,
+        "order": 4,
+        "clicks": 15,
+        "createdAt": "2026-10-12T16:45:00Z",
+        "updatedAt": "2026-10-12T16:45:00Z"
+      },
+      {
+        "id": "link_05",
+        "title": "이메일 문의",
+        "url": "mailto:sooo849667@gmail.com",
+        "description": "협업이나 궁금한 점은 언제든 환영해요",
+        "icon": "✉️",
+        "category": "contact",
+        "badge": "열림",
+        "isPinned": false,
+        "order": 5,
+        "clicks": 8,
+        "createdAt": "2026-10-15T10:00:00Z",
+        "updatedAt": "2026-10-15T10:00:00Z"
+      },
+      {
+        "id": "link_06",
+        "title": "추천 개발 서적 & 강의",
+        "url": "https://velog.io",
+        "description": "개발 실력 향상에 도움 된 추천 자료 모음",
+        "icon": "📚",
+        "category": "blog",
+        "badge": null,
+        "isPinned": false,
+        "order": 6,
+        "clicks": 24,
+        "createdAt": "2026-10-20T13:30:00Z",
+        "updatedAt": "2026-11-02T11:00:00Z"
+      }
+    ]
+  },
+  "meta": {
+    "serverTime": "2026-11-04T19:45:00Z",
+    "version": "v1.0"
+  }
+}

@@ -1,6 +1,6 @@
 # 📋 제품 요구사항 정의서 (PRD): 마이링크 (MyLink)
 
-> **버전:** v1.1.0 (사용자 시나리오 추가)  
+> **버전:** v1.2.1 (shadcn/ui + 토스 디자인 시스템 융합 명세 반영)  
 > **최종 수정일:** 2026-11-04  
 > **프로젝트:** 멀티 유저 링크트리(Linktree) 클론 SaaS  
 > **상태:** 기획 완료 / 개발 대기
@@ -35,11 +35,34 @@
 | 레이어 | 기술 | 선정 이유 |
 |---|---|---|
 | **프론트엔드 프레임워크** | **Next.js 16 (App Router)** | 서버 컴포넌트(RSC), 빠른 SSR/FCP 및 SEO 최적화 |
-| **언어 & 스타일** | **TypeScript, Tailwind CSS** | 타입 안정성 및 일관된 유틸리티 퍼스트 디자인 시스템 |
+| **언어 & 스타일** | **TypeScript, Tailwind CSS v4** | 타입 안정성 및 CSS-First 모던 유틸리티 스타일링 (모듈 CSS 배제, Tailwind CSS 100% 전면 통일) |
+| **UI 컴포넌트 & 디자인 시스템** | **shadcn/ui + 토스 디자인 시스템 (TDS)** | shadcn/ui의 접근성 높은 컴포넌트 아키텍처 위에 `docs/design.md`의 토스 디자인 시스템 토큰을 결합한 커스텀 디자인 시스템 구축 |
 | **전역 상태 관리** | **Zustand** | 초경량(1.1KB), 보일러플레이트 없는 실시간 모바일 미리보기 상태 동기화 |
 | **백엔드 & BaaS** | **Supabase** | 구글/카카오 OAuth 인증, PostgreSQL RLS 보안, 이미지 스토리지 일체형 지원 |
 | **아이콘 & 인터랙션** | **Lucide React, @hello-pangea/dnd** | 직관적인 아이콘 및 부드러운 드래그 앤 드롭 정렬 |
 | **배포 플랫폼** | **Vercel** | Next.js 최적화된 글로벌 엣지 네트워크 배포 |
+
+### 3.1 디자인 시스템 원칙 (shadcn/ui + 토스 디자인 시스템 융합)
+- **아키텍처 구조 (shadcn/ui + TDS):**
+  - **컴포넌트 뼈대(Core Architecture):** [shadcn/ui](https://ui.shadcn.com/)를 기본 컴포넌트 라이브러리로 채택하여 웹 접근성(A11y), 상태 제어, 키보드 인터랙션, 모듈형 코드 소유권을 확보합니다.
+  - **시각 디자인 토큰(Design Tokens):** `docs/design.md`에 정의된 **토스 디자인 시스템(TDS)** 규격을 절대 삭제하지 않고 영구 보존하며, UI 디자인 시스템을 시스템화하여 구축하기 위한 단일 진실 공급원(Single Source of Truth)으로 사용합니다.
+- **TDS 디자인 토큰 매핑:**
+  - shadcn/ui의 기본 테마 변수(`--primary`, `--background`, `--foreground`, `--muted`, `--border`, `--radius` 등)를 TDS 토큰 규격(Toss Blue `#3182F6`, Grey Scale `#191F28` ~ `#F2F4F6`, Pretendard 타이포그래피, TDS Elevation 그림자)과 매핑하여 일체감 있는 토스 감성의 완성도 높은 UI를 제공합니다.
+- **Tailwind CSS v4 CSS-First 테마 시스템:**
+  - 별도의 JS/TS 설정 파일 없이 `src/app/globals.css`의 `@theme inline` 및 CSS 변수를 통해 TDS 팔레트와 shadcn 테마 토큰을 통합 관리합니다.
+- **컴포넌트 확장 및 제작:**
+  - 필요한 인터랙션 요소(Button, Dialog, Input, Dropdown Menu, Switch, Toast 등)는 `npx shadcn@latest add <component>`를 통해 `src/components/ui/`에 소스코드로 추가한 뒤, TDS 가이드라인에 맞게 스타일을 조율하여 커스텀 디자인 시스템으로 구축합니다.
+- **`design.md` 보존 원칙:**
+  - `docs/design.md`의 토스 디자인 시스템 문서는 삭제하지 않고 지속적으로 디자인 시스템 확장의 레퍼런스로 유지합니다.
+
+### 3.2 스타일링 원칙 (Tailwind CSS 단일 표준 적용 & 모듈 CSS 배제)
+- **모듈 CSS(`*.module.css`) 사용 배제:**
+  - 본 프로젝트의 모든 페이지 및 컴포넌트 스타일은 별도의 CSS 모듈(`*.module.css`)을 사용하지 않으며, **Tailwind CSS 유틸리티 클래스로 100% 통일**하여 개발합니다.
+  - 별도 분리된 CSS 파일 없이 컴포넌트 파일 내에 직접 선언된 Tailwind 유틸리티 클래스로 응집도와 생산성을 극대화합니다.
+- **shadcn/ui 및 유틸리티 클래스 일원화:**
+  - shadcn/ui 컴포넌트(`@/components/ui/*`)와 비즈니스 컴포넌트 모두 동일한 Tailwind 클래스 및 `cn()` 헬퍼를 활용하여 일관된 마크업/스타일 패턴을 유지합니다.
+- **디자인 토큰 연동:**
+  - 색상, 폰트, 여백, 반경, 그림자 등 모든 스타일 속성은 `src/app/globals.css`에 선언된 디자인 토큰을 활용한 Tailwind 클래스(`bg-background`, `text-primary`, `rounded-xl`, `border-border` 등)로 표준화합니다.
 
 ---
 
@@ -187,6 +210,19 @@ CREATE POLICY "Users can update own profile."
 CREATE POLICY "Users can manage own link blocks." 
   ON public.link_blocks FOR ALL USING (auth.uid() = user_id);
 ```
+
+### 6.1 프로토타이핑용 더미 데이터 명세 (Mock Data / JSON)
+실제 데이터베이스(Supabase) 연동 전, UI 컴포넌트 렌더링 및 인터랙션을 신속하게 검증하기 위해 백엔드 REST API 규격의 더미 데이터(`src/data/links.json`)를 사용합니다.
+
+- **데이터 파일 위치:** `src/data/links.json`
+- **적용 목적:**
+  - 실제 DB 연결 전 프론트엔드 UI/UX 빠른 프로토타이핑 및 렌더링 테스트
+  - 백엔드 REST API 표준 Envelope 패턴(`success`, `code`, `data`, `meta`) 사전 정의
+  - 카테고리 필터링(전체, 프로젝트, 블로그, 연락처) 및 카드 뱃지 상태 사전 검증
+- **Mock API 스키마 규격 (`GET /api/v1/links`):**
+  - **`data.profile`**: 사용자 기본 정보(이름, 소개, 상태 메시지, 아바타, SNS 링크, 통계)
+  - **`data.links`**: 링크 아이템 리스트(식별자, 타이틀, URL, 설명, 아이콘, 카테고리, 뱃지, 고정 여부, 순서, 클릭 수 등)
+  - **`meta`**: 서버 타임스탬프 및 API 버전
 
 ---
 
