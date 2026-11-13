@@ -24,6 +24,7 @@ import {
   orderBy,
   deleteDoc,
   doc,
+  onSnapshot,
 } from "firebase/firestore";
 
 // 사진 2번 기반의 심플하고 깔끔한 기본 링크 목록
@@ -96,21 +97,15 @@ export default function Home() {
   const toastTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    let isMounted = true;
+    // Firestore users/anonymous/links 경로에서 createdAt 기준 최신순 정렬 구독
+    const linksCol = collection(db, "users", "anonymous", "links");
+    const q = query(linksCol, orderBy("createdAt", "desc"));
 
-    // Firestore에서 실시간 또는 초기 링크 데이터 조회
-    const loadFirestoreLinks = async () => {
-      try {
-        const linksCol = collection(db, "users", "anonymous", "links");
-        let snapshot;
-        try {
-          snapshot = await getDocs(query(linksCol, orderBy("createdAt", "desc")));
-        } catch {
-          // 정렬 인덱스가 없거나 미생성 시 일반 조회 fallback
-          snapshot = await getDocs(linksCol);
-        }
-
-        if (isMounted && !snapshot.empty) {
+    // 페이지 로드 시 실시간 구독 (링크 추가/수정/삭제 시 자동 목록 갱신)
+    const unsubscribe = onSnapshot(
+      q,
+      (snapshot) => {
+        if (!snapshot.empty) {
           const firestoreLinks: LinkItem[] = snapshot.docs.map((docSnap) => {
             const data = docSnap.data();
             return {
@@ -125,38 +120,39 @@ export default function Home() {
           });
 
           setProfile((prev) => ({ ...prev, links: firestoreLinks }));
-          return;
-        }
-      } catch (err) {
-        console.warn("Firestore에서 링크를 불러오지 못했습니다. 로컬 데이터를 사용합니다:", err);
-      }
 
-      // fallback: 로컬 스토리지 또는 기본 링크
-      if (typeof window !== "undefined") {
-        const savedLinks = localStorage.getItem("profile_links_simple_v2");
-        if (savedLinks) {
-          try {
-            const parsed = JSON.parse(savedLinks);
-            if (Array.isArray(parsed) && parsed.length > 0 && isMounted) {
-              setProfile((prev) => ({ ...prev, links: parsed }));
-              return;
-            }
-          } catch (e) {
-            console.error("Failed to parse saved links", e);
+          if (typeof window !== "undefined") {
+            localStorage.setItem(
+              "profile_links_simple_v2",
+              JSON.stringify(firestoreLinks)
+            );
           }
         } else {
-          localStorage.setItem(
-            "profile_links_simple_v2",
-            JSON.stringify(defaultLinks)
-          );
+          // Firestore에 데이터가 아직 없으면 기본 링크 목록 표시
+          setProfile((prev) => ({ ...prev, links: defaultLinks }));
+        }
+      },
+      (error) => {
+        console.error("Firestore 실시간 리스너 오류:", error);
+        // 에러 발생 시 로컬 스토리지 데이터 백업 로드
+        if (typeof window !== "undefined") {
+          const savedLinks = localStorage.getItem("profile_links_simple_v2");
+          if (savedLinks) {
+            try {
+              const parsed = JSON.parse(savedLinks);
+              if (Array.isArray(parsed) && parsed.length > 0) {
+                setProfile((prev) => ({ ...prev, links: parsed }));
+              }
+            } catch (e) {
+              console.error("로컬 링크 파싱 실패:", e);
+            }
+          }
         }
       }
-    };
-
-    loadFirestoreLinks();
+    );
 
     return () => {
-      isMounted = false;
+      unsubscribe();
       if (toastTimeoutRef.current) {
         clearTimeout(toastTimeoutRef.current);
       }
@@ -203,7 +199,7 @@ export default function Home() {
   // 링크 추가 핸들러: Firestore users/anonymous/links에 저장
   const handleAddLink = async (newLinkData: LinkItem) => {
     try {
-      // Firestore users/anonymous/links 컬렉션에 추가
+      // 1. Firestore users/anonymous/links 컬렉션에 추가
       const docRef = await addDoc(
         collection(db, "users", "anonymous", "links"),
         {
@@ -218,22 +214,19 @@ export default function Home() {
         }
       );
 
+      // 2. 즉각적인 UI 반영을 위한 상태 업데이트 (onSnapshot에서도 실시간 동기화됨)
       const newLink: LinkItem = {
         ...newLinkData,
         id: docRef.id,
       };
 
       setProfile((prev) => {
-        const updated = [newLink, ...prev.links];
-        if (typeof window !== "undefined") {
-          localStorage.setItem(
-            "profile_links_simple_v2",
-            JSON.stringify(updated)
-          );
+        if (prev.links.some((l) => l.id === newLink.id)) {
+          return prev;
         }
         return {
           ...prev,
-          links: updated,
+          links: [newLink, ...prev.links],
         };
       });
 

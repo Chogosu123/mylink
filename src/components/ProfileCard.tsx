@@ -20,7 +20,7 @@ export default function ProfileCard({ profile }: ProfileCardProps) {
         <div className="relative w-[88px] h-[88px] rounded-full overflow-hidden mb-3.5 border-2 border-white ring-2 ring-[#E5E8EB] bg-[#F2F4F6] flex items-center justify-center shrink-0 shadow-xs">
           {!avatarError ? (
             <Image
-              src="/avatar.png"
+              src={`${process.env.NEXT_PUBLIC_BASE_PATH || ""}/avatar.png`}
               alt={profile.name}
               fill
               sizes="88px"
